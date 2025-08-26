@@ -1,4 +1,14 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* optional: minimal white/grey + carved-ish feel */
+:root {
+  --background: #f8f9fb;
+  --foreground: #0b0d10;
+}
+html, body { background: var(--background); color: var(--foreground); }
+h1, h2, h3 { text-shadow: 0 1px 0 #fff, 0 0 1px rgba(0,0,0,0.35); }
 
 :root {
   --background: #ffffff;
