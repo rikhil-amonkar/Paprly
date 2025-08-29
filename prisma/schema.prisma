@@ -23,10 +23,23 @@ model Paper {
   updatedAt   DateTime @updatedAt
 
   // New URL Additions
-  authors String? @default("") // CSV of authors (for now)
-  arxivId String? @unique
-  url     String? // General URL (canonical link like https://arxiv.org/abs/2410.12345, etc)
-  pdfUrl  String?
-  venue   String? // Conference or journal name
-  year    Int? // Year of publication
+  authors  String?   @default("") // CSV of authors (for now)
+  arxivId  String?   @unique
+  url      String? // General URL (canonical link like https://arxiv.org/abs/2410.12345, etc)
+  pdfUrl   String?
+  venue    String? // Conference or journal name
+  year     Int? // Year of publication
+  projects Project[] @relation("ProjectPapers")
+}
+
+// Each user has projects for their own papers
+model Project {
+  id           String   @id @default(cuid())
+  title        String
+  abstract     String?  @default("")
+  theme        String? // e.g., "Machine Learning", "Computer Vision", etc.
+  contributors String?  @default("") // CSV of contributors (for now)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  papers       Paper[]  @relation("ProjectPapers") // Many-to-many relationship with papers
 }

@@ -1,41 +1,41 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 
-// Find all papers from databse
+// Find all projects from database
 export async function GET() {
 
-    // Order all papers by data created
-    const papers = await prisma.paper.findMany({
+    // Order all projects by date created
+    const projects = await prisma.project.findMany({
         orderBy: { createdAt: "desc" },
     });
-    return NextResponse.json(papers);
+    return NextResponse.json(projects);
 }
 
-// Create a new paper to add to table
+// Create a new project to add to table
 export async function POST(req: Request) {
     try {
 
         // Parse the request body
         const body = await req.json();
 
-        // Validate the paper title
+        // Validate the project title
         if (!body.title || typeof body.title != "string" || !body.title.trim()) {
             return NextResponse.json({ error: "Title is required" }, { status: 400 });  // Return error if invalid title
         }
 
-        // Insert paper into the database if valid
-        const paper = await prisma.paper.create({
+        // Insert project into the database if valid
+        const project = await prisma.project.create({
             data: {
                 title: body.title.trim(),
                 abstract: body.abstract ?? null,  // Abstract is optional and default to null
+                theme: body.theme ?? "",  // Default theme is empty string
+                contributors: body.contributors ?? ""  // Default contributors is empty string
             },
         });
 
-        // Return the created paper
-        return NextResponse.json(paper, { status: 201 });
+        // Return the created project
+        return NextResponse.json(project, { status: 201 });
     } catch (error) {
         return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
     }
 }
-
-

@@ -72,7 +72,7 @@ export default function Home() {
           <Button
             className={[
               "px-20 py-5 text-base rounded-md shadow-md",
-              "bg-blue-300 text-white font-semibold hover:bg-blue-200",
+              "bg-blue-400 text-white font-semibold hover:bg-blue-300",
               "transition-transform duration-200 hover:scale-105",
             ].join(" ")}
           >

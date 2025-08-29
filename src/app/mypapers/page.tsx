@@ -7,7 +7,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Typewriter } from "react-simple-typewriter";
-import { Search } from "lucide-react";
+import dynamic from "next/dynamic";
+
+const SearchIcon = dynamic(() => import("lucide-react").then(m => m.Search), {
+    ssr: false,
+});
 
 // Empty paper schema
 type Paper = {
@@ -141,7 +145,7 @@ export default function Home() {
 
                     {/* Input field for arXiv URL */}
                     <div className="relative">
-                        <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                        <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-4 text-gray-400" />
                         <Input
                             className="pl-12 h-12 text-lg bg-card text-gray-700"
                             placeholder="arXiv URL (e.g. https://arxiv.org/abs/1234.56789)"
@@ -157,8 +161,8 @@ export default function Home() {
                             type="submit"
                             disabled={ingesting || !arXiv.trim()}
                             className={[
-                                "w-40 bg-blue-300 text-white font-semibold",
-                                "hover:bg-blue-200 transition-colors mt-6 transform",
+                                "w-40 bg-blue-400 text-white font-semibold",
+                                "hover:bg-blue-300 transition-colors mt-6 transform",
                                 "transition-transform duration-200 hover:scale-105"
                             ].join(" ")}
                         >

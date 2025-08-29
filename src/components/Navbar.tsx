@@ -6,6 +6,11 @@ import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Search, Upload, BookOpen, FolderOpen, Settings, Paperclip } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import dynamic from "next/dynamic";
+
+const SearchIcon = dynamic(() => import("lucide-react").then(m => m.Search), {
+    ssr: false,
+});
 
 // Navigation items with icons
 const links = [
@@ -34,7 +39,7 @@ export default function Navbar() {
                     {/* Global Search */}
                     <div className="flex-1 max-w-md">
                         <div className="relative">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-8 h-4 text-muted-foreground text-black" />
+                            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-4 text-gray-400" />
                             <Input
                                 placeholder="Search papers, authors, keywords..."
                                 className="pl-10 bg-card text-black"
@@ -71,7 +76,7 @@ export default function Navbar() {
                     </nav>
 
                     <a href="/login" className="px-6 py-2 text-base rounded-md shadow-md bg-gray-700 text-white font-semibold hover:bg-gray-600 transform transition-transform duration-200 hover:scale-105">Login</a> {/* Login link */}
-                    <a href="/signup" className="px-6 py-2 text-base rounded-md shadow-md bg-blue-300 text-white font-semibold hover:bg-blue-200 transform transition-transform duration-200 hover:scale-105">Sign Up</a> {/* Sign Up link */}
+                    <a href="/signup" className="px-6 py-2 text-base rounded-md shadow-md bg-blue-400 text-white font-semibold hover:bg-blue-300 transform transition-transform duration-200 hover:scale-105">Sign Up</a> {/* Sign Up link */}
 
                 </div>
             </nav>
