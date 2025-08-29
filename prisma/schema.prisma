@@ -12,12 +12,21 @@ datasource db {
 
 // Each paper has a title, abstract, problem, method, results, limitations, and createdAt timestamp
 model Paper {
-  id          Int      @id @default(autoincrement())
+  id          String   @id @default(cuid())
   title       String
-  abstract    String?
+  abstract    String?  @default("")
   problem     String?
   method      String?
   results     String?
   limitations String?
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // New URL Additions
+  authors String? @default("") // CSV of authors (for now)
+  arxivId String? @unique
+  url     String? // General URL (canonical link like https://arxiv.org/abs/2410.12345, etc)
+  pdfUrl  String?
+  venue   String? // Conference or journal name
+  year    Int? // Year of publication
 }

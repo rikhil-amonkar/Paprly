@@ -21,7 +21,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         //    - where: { id: params.id }
         //    - data: include fields from body (title, abstract, etc.)
         const updated = await prisma.paper.update({
-            where: { id: Number(id) },
+            where: { id: String(id) },
             data: {
                 title: body.title,
                 abstract: body.abstract,
@@ -49,7 +49,7 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
 
         // Call prisma.paper.delete() with where: { id: params.id }
         await prisma.paper.delete({
-            where: { id: Number(id) },
+            where: { id: String(id) },
         });
 
         // Return JSON { success: true }
