@@ -1,6 +1,6 @@
 "use client";
 import { METHODS } from "http";
-import { useEffect, useState } from "react";
+import { useDebugValue, useEffect, useState, useMemo } from "react";
 
 // Already made components (imports for frontend)
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,7 +20,7 @@ type Project = {
     updatedAt: string;
 };
 
-type Mode = "create" | "edit";
+type Mode = "create" | "edit";  // Define modes for creating and editing projects
 
 // Default home function to run frontend and routes
 export default function Home() {
@@ -34,9 +34,37 @@ export default function Home() {
     const [saving, setSaving] = useState(false);  // Nothing is saved right away
     const [open, setOpen] = useState(false);  // Dialog is closed by default
     const [loading, setLoading] = useState(true);  // Screen should start loading
-    const [error, setError] = useState<string | null>(null);
-    const [mode, setMode] = useState<Mode>("create");
-    const [editingProject, setEditingProject] = useState<Project | null>(null);
+    const [error, setError] = useState<string | null>(null);  // No error at start
+    const [mode, setMode] = useState<Mode>("create");  // Start in create mode
+    const [editingProject, setEditingProject] = useState<Project | null>(null);  // No project is being edited at start
+
+    // Reset form fields and open dialog for creating a new project
+    function resetForm() {
+        setTitle("");
+        setAbstract("");
+        setTheme("");
+        setContributors("");
+        setEditingProject(null);
+        setMode("create");
+        setSaving(false);
+    }
+
+    // Open create dialogue and reset form fields
+    function openCreateDialog() {
+        resetForm();
+        setOpen(true);
+    }
+
+    // Open edit dialogue and populate fields with existing project data
+    function openEditDialogue(p: Project) {
+        setMode("edit");
+        setEditingProject(p);
+        setTitle(p.title);
+        setAbstract(p.abstract ?? "");
+        setTheme(p.theme ?? "");
+        setContributors(p.contributors ?? "");
+        setOpen(true);
+    }
 
     // Fetch all the projects
     async function load() {
@@ -47,7 +75,7 @@ export default function Home() {
 
         // Fetch the projects
         try {
-            const res = await fetch("api/projects", { cache: "no-store" });
+            const res = await fetch("/api/projects", { cache: "no-store" });
             const data = await res.json();  // Convert data into json format
 
             // Update paper state
@@ -63,39 +91,76 @@ export default function Home() {
     // Runs load() when the page first opens (when project list starts empty)
     useEffect(() => { load(); }, []);
 
-    // Function to create and add a new project 
-    async function createProject(e: React.FormEvent) {  // Create a form with React
+    // Trim whitespace from input fields
+    const trimmedTitle = title.trim();
+    const trimmedAbstract = abstract.trim();
+    const trimmedTheme = theme.trim();
+    const trimmedContributors = contributors.trim();
 
+    // Check if form content is different from the original project data
+    const isFormChanged = useMemo(() => {
+        if (mode != "edit" || !editingProject) return true;  // If not in edit mode or no project is being edited, consider form changed
+        const o = editingProject;
+        const norm = (v?: string | null) => (v ?? "").trim();  // Normalize values by trimming whitespace and handling null/undefined
+
+        // Check if any field has changed
+        return (
+            norm(o.title) !== trimmedTitle ||
+            norm(o.abstract) !== trimmedAbstract ||
+            norm(o.theme) !== trimmedTheme ||
+            norm(o.contributors) !== trimmedContributors
+        );
+    }, [mode, editingProject, trimmedTitle, trimmedAbstract, trimmedTheme, trimmedContributors]);
+
+    // Function to create or edit a project based on the current mode
+    async function handleSubmit(e: React.FormEvent) {  // Create a form with React
         e.preventDefault();  // Stops page from reloading when form submits
 
-        // Check for empty title
-        if (!title.trim()) {
-            setSaving(true);
+        if (!trimmedTitle) {
+            alert("Title is required.");
+            return;
         }
 
-        // Fetch projects and specify what action is being taken
-        try {
-            const res = await fetch("api/projects", {
-                method: "POST",  // Specify method (posting project)
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ title, abstract, theme, contributors }),  // Sends JSON format string to backend
-            });
-
-            // Send created project but check for invalid format
-            const created: Project = await res.json();
-            if (!res.ok) throw new Error((created as any)?.error || "Created failed");  // Throw an error if creating failed
-
-            // Add project to projects list
-            setProjects(prev => [created, ...prev])  // Adds newest project to front of list
-
-            setTitle("");
-            setAbstract("");
-            setTheme("");
-            setContributors("");
+        if (mode == "edit" && !isFormChanged) {
             setOpen(false);
+            resetForm();
+            return;
+        }
 
-        } catch (error: any) {  // Catch any errors
-            alert(error.message ?? "Create failed");
+        setSaving(true);
+
+        try {
+            if (mode == "create") {
+                const res = await fetch("/api/projects", {
+                    method: "POST",  // Specify method (posting project)
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ title: trimmedTitle, abstract: trimmedAbstract, theme: trimmedTheme, contributors: trimmedContributors }),  // Sends JSON format string to backend
+                });
+
+                // Send created project but check for invalid format
+                const created: Project = await res.json();
+                if (!res.ok) throw new Error((created as any)?.error || "Create failed");
+                setProjects(prev => [created, ...prev]);
+            } else if (mode === "edit" && editingProject) {
+                const res = await fetch(`/api/projects/${editingProject.id}`, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        title: trimmedTitle,
+                        abstract: trimmedAbstract || null,
+                        theme: trimmedTheme || null,
+                        contributors: trimmedContributors || null,
+                    }),
+                });
+                const updated: Project = await res.json();
+                if (!res.ok) throw new Error((updated as any)?.error || "Update failed");
+                setProjects(prev => prev.map(p => (p.id === updated.id ? updated : p)));
+            }
+
+            setOpen(false);
+            resetForm();
+        } catch (error: any) {
+            alert(error.message ?? "Save failed");
         } finally {
             setSaving(false);
         }
@@ -107,7 +172,7 @@ export default function Home() {
         // Confirm if user wants to delete selected paper
         if (!confirm("Delete this project?")) return;
 
-        const res = await fetch(`api/projects/${id}`, {
+        const res = await fetch(`/api/projects/${id}`, {
             method: "DELETE",
         });
         if (!res.ok) {
@@ -130,20 +195,25 @@ export default function Home() {
                 <h1 className="text-3xl font-bold text-gray-700">Your Projects</h1>
 
                 {/* Dialog component for adding a new project */}
-                <Dialog open={open} onOpenChange={setOpen}>
+                <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
                     <DialogTrigger asChild>
-                        <Button className="bg-gray-700 text-white font-semibold hover:bg-gray-500 my-4">
+                        <Button
+                            className="bg-gray-700 text-white font-semibold hover:bg-gray-500 my-4"
+                            onClick={openCreateDialog}
+                        >
                             + Add Project
                         </Button>
                     </DialogTrigger>
 
                     <DialogContent className="sm:max-w-lg">
                         <DialogHeader>
-                            <DialogTitle className="text-gray-700">New Project</DialogTitle>
+                            <DialogTitle className="text-gray-700">
+                                {mode === "create" ? "New Project" : "Edit Project"}
+                            </DialogTitle>
                         </DialogHeader>
 
                         {/* Pop-op form for adding a new project */}
-                        <form onSubmit={createProject} className="grid gap-4 pt-2">
+                        <form onSubmit={handleSubmit} className="grid gap-4 pt-2">
                             <Input
                                 className="placeholder-gray-400 text-gray-700"
                                 placeholder="Project title (required)"
@@ -185,10 +255,14 @@ export default function Home() {
                                 </Button>
                                 <Button
                                     type="submit"
-                                    disabled={saving || !title.trim()}
+                                    disabled={
+                                        saving ||
+                                        !trimmedTitle ||
+                                        (mode === "edit" && !isFormChanged)
+                                    }
                                     className="bg-blue-400 text-white hover:bg-blue-300"
                                 >
-                                    {saving ? "Creating..." : "Add Project"}
+                                    {saving ? mode == "create" ? "Creating..." : "Saving..." : mode == "create" ? "Add Project" : "Save Changes"}
                                 </Button>
                             </DialogFooter>
                         </form>
@@ -229,13 +303,22 @@ export default function Home() {
                                             })}
                                         </p>
                                     </div>
-                                    <Button
-                                        variant="ghost"
-                                        className="text-xl text-red-500 font-semibold hover:bg-gray-200 transition-colors flex text-center h-20"
-                                        onClick={() => deleteProject(p.id)}
-                                    >
-                                        Delete
-                                    </Button>
+                                    <div className="justify-end flex flex-col gap-2">
+                                        <Button
+                                            variant="ghost"
+                                            className="text-md text-red-500 font-semibold hover:bg-gray-200 transition-colors flex text-center h-10"
+                                            onClick={() => deleteProject(p.id)}
+                                        >
+                                            Delete
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            className="text-md text-blue-500 font-semibold hover:bg-gray-200 transition-colors flex text-center h-10"
+                                            onClick={() => openEditDialogue(p)}
+                                        >
+                                            Edit
+                                        </Button>
+                                    </div>
                                 </div>
                             </li>
                         ))}
