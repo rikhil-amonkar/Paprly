@@ -33,22 +33,22 @@ export default function Navbar() {
         <>
             {/* Nav bar content */}
             <nav className="fixed w-full z-10 bg-white/30 backdrop-blur-md border-b border-gray-200">
-                <div className="max-w-6xl mx-auto px-6 py-4 flex items-center gap-6">
-                    <a href="/" className="text-3xl font-bold text-gray-700">Paprly</a>  {/* Logo/Home */}
+                <div className="w-full px-6 py-4 flex items-center justify-between">
+                    <a href="/" className="text-3xl font-bold text-gray-700 pl-12 pr-12">Paprly</a>  {/* Logo/Home */}
 
                     {/* Global Search */}
-                    <div className="flex-1 max-w-md">
+                    <div className="flex-1">
                         <div className="relative">
                             <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-4 text-gray-400" />
                             <Input
                                 placeholder="Search papers, authors, keywords..."
-                                className="pl-10 bg-card text-black"
+                                className="pl-10 bg-card text-black w-full"
                             />
                         </div>
                     </div>
 
                     {/* Navigation links */}
-                    <nav className="flex items-center space-x-1 ml-8">
+                    <nav className="flex items-center space-x-1 ml-8 pr-12">
                         {links.map((item) => {
                             const Icon = item.icon;
 
@@ -75,8 +75,11 @@ export default function Navbar() {
                         })}
                     </nav>
 
-                    <a href="/login" className="px-6 py-2 text-base rounded-md shadow-md bg-gray-700 text-white font-semibold hover:bg-gray-600 transform transition-transform duration-200 hover:scale-105">Login</a> {/* Login link */}
-                    <a href="/signup" className="px-6 py-2 text-base rounded-md shadow-md bg-blue-400 text-white font-semibold hover:bg-blue-300 transform transition-transform duration-200 hover:scale-105">Sign Up</a> {/* Sign Up link */}
+                    {/* Authentication links */}
+                    <div className="flex items-center gap-4 ml-8 pr-12">
+                        <a href="/login" className="px-6 py-2 text-base rounded-md shadow-md bg-gray-700 text-white font-semibold hover:bg-gray-600 transform transition-transform duration-200 hover:scale-105">Login</a> {/* Login link */}
+                        <a href="/signup" className="px-6 py-2 text-base rounded-md shadow-md bg-blue-400 text-white font-semibold hover:bg-blue-300 transform transition-transform duration-200 hover:scale-105">Sign Up</a> {/* Sign Up link */}
+                    </div>
 
                 </div>
             </nav>

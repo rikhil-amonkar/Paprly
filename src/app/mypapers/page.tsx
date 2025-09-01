@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Typewriter } from "react-simple-typewriter";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Trash2 } from "lucide-react";
+import { EyeIcon } from "lucide-react";
 import dynamic from "next/dynamic";
 
 const SearchIcon = dynamic(() => import("lucide-react").then(m => m.Search), {
@@ -24,6 +26,7 @@ type Paper = {
     result?: string | null;
     url?: string | null;
     limitations?: string | null;
+    contributors?: string | null;
     createdAt: string;
 };
 
@@ -219,20 +222,29 @@ export default function Home() {
                 </form>
             </div>
 
-            {/* Card component for paper list */}
-            <Card className="bg-white shadow-lg rounded-xl">
-                <CardContent>
-                    <CardTitle className="mt-6 text-gray-700">Library</CardTitle>
-                </CardContent>
-                <CardContent className="space-y-4">
+            {/* Div component for paper list */}
+            <div className="bg-transparent">
+                <h1 className="mt-6 text-gray-700 text-3xl font-semibold">Library</h1>
+                <div className="mt-4">
+
+                    {/* Status messages */}
                     {loading && <div className="text-sm text-muted-foreground text-gray-700">Loading...</div>}
                     {error && <div className="text-sm text-red-600">{error}</div>}
                     {!loading && papers.length == 0 && (
                         <div className="text-sm text-muted-foreground text-gray-700">No papers saved.</div>
                     )}
-                    <ul className="space-y-3">
+
+                    {/* Grid for papers */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
                         {papers.map((p) => (
-                            <li key={p.id} className="border rounded-lg p-3 hover:bg-accent">
+                            <div
+                                key={p.id}
+                                className={["bg-white rounded-xl shadow-md",
+                                    "p-5 min-h-[280px] h-full flex flex-col",
+                                    "transition-transform transition-shadow duration-200",
+                                    "hover:scale-105 hover:shadow-xl"
+                                ].join(" ")}
+                            >
                                 <div className="flex items-start justify-between gap-4">
                                     <div className="space-y-1">
                                         <a
@@ -242,8 +254,9 @@ export default function Home() {
                                             className="hover:underline space-y-1 text-gray-700 font-semibold">
                                             {p.title}
                                         </a>
+                                        <p className="text-sm text-gray-500">{"arXiv ● "}{p.createdAt.slice(0, 10)}</p>
                                         {p.abstract && (
-                                            <p className="text-sm text-muted-foreground line-clamp-2 text-gray-700">
+                                            <p className="text-sm text-muted-foreground line-clamp-6 text-gray-700">
                                                 {p.abstract}
                                             </p>
                                         )}
@@ -256,32 +269,33 @@ export default function Home() {
                                             className="text-md text-gray-700 font-semibold hover:bg-gray-200 transition-colors flex text-center h-10"
                                             onClick={() => viewPaperDetails(p)}
                                         >
-                                            View
+                                            <EyeIcon className="w-4 h-4" />
                                         </Button>
                                         <Button
                                             variant="ghost"
                                             className="text-md text-red-500 font-semibold hover:bg-gray-200 transition-colors flex text-center h-10"
                                             onClick={() => deletePaper(p.id)}
                                         >
-                                            Delete
+                                            <Trash2 className="w-4 h-4" />
                                         </Button>
                                     </div>
 
                                 </div>
-                            </li>
+                            </div>
                         ))}
-                    </ul>
-                </CardContent>
-            </Card>
+                    </div>
+                </div>
+            </div>
 
             {/* Dialog for viewing paper details (outside of list of each paper) */}
             <Dialog open={!!viewPaper} onOpenChange={(open) => { if (!open) closePaperDetails(); }}>
-                <DialogContent className="max-w-5xl max-h-[80vh] overflow-y-auto">
+                <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle className="text-lg font-bold text-gray-700">
                             {viewPaper?.title}
                         </DialogTitle>
                         <p className="text-gray-500">{"arXiv ● "}{viewPaper?.createdAt.slice(0, 10)}</p>
+                        <p className="text-gray-500">{viewPaper?.contributors}</p>
                     </DialogHeader>
 
                     {/* Paper details content */}

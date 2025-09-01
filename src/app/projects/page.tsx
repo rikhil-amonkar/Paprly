@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Trash2 } from "lucide-react";
+import { Edit } from "lucide-react";
 
 // Empty project schema
 type Project = {
@@ -192,7 +194,7 @@ export default function Home() {
 
             {/* Card component for manual project add */}
             <div className="flex items-center justify-between">
-                <h1 className="text-3xl font-bold text-gray-700">Your Projects</h1>
+                <h1 className="text-3xl font-bold text-gray-700">Research Projects</h1>
 
                 {/* Dialog component for adding a new project */}
                 <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
@@ -272,15 +274,15 @@ export default function Home() {
             </div>
 
             {/* Card component for project list */}
-            <Card className="bg-gray-100 shadow-lg rounded-xl">
+            <Card className="bg-white shadow-lg rounded-xl">
                 <CardContent>
-                    <CardTitle className="mt-6 text-gray-700">Library</CardTitle>
+                    <CardTitle className="mt-6 text-gray-700">My Projects</CardTitle>
                 </CardContent>
                 <CardContent className="space-y-4">
                     {loading && <div className="text-sm text-muted-foreground text-gray-700">Loading...</div>}
                     {error && <div className="text-sm text-red-600">{error}</div>}
                     {!loading && projects.length == 0 && (
-                        <div className="text-sm text-muted-foreground text-gray-700">No projects saved.</div>
+                        <div className="text-sm text-muted-foreground text-gray-700">No projects created.</div>
                     )}
                     <ul className="space-y-3">
                         {projects.map((p) => (
@@ -309,14 +311,14 @@ export default function Home() {
                                             className="text-md text-red-500 font-semibold hover:bg-gray-200 transition-colors flex text-center h-10"
                                             onClick={() => deleteProject(p.id)}
                                         >
-                                            Delete
+                                            <Trash2 className="w-4 h-4" />
                                         </Button>
                                         <Button
                                             variant="ghost"
                                             className="text-md text-blue-500 font-semibold hover:bg-gray-200 transition-colors flex text-center h-10"
                                             onClick={() => openEditDialogue(p)}
                                         >
-                                            Edit
+                                            <Edit className="w-4 h-4" />
                                         </Button>
                                     </div>
                                 </div>
