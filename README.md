@@ -1,5 +1,4 @@
 # Paprly
-[![Ask DeepWiki](https://devin.ai/assets/askdeepwiki.png)](https://deepwiki.com/rikhil-amonkar/Paprly)
 
 Paprly is a research management tool designed to streamline your academic workflow. It allows you to ingest papers from arXiv, generate AI-powered summaries, and organize your research into projects.
 
