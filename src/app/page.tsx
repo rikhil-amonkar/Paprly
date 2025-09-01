@@ -5,6 +5,7 @@ import { use, useEffect, useState } from "react";
 // Already made components (imports for frontend)
 import { Button } from "@/components/ui/button";
 import { Typewriter } from "react-simple-typewriter";
+import { Container } from "lucide-react";
 
 // **** Routing Componenets ****
 
@@ -32,6 +33,7 @@ export default function Home() {
 
     // Main page layout
     <main className="mx-auto max-w-6xl px-6 pt-36 md:pt-40 pb-16">
+
       <header className="space-y-6">
         {/* shared measure: both h1 and p hang from the same left edge */}
         <div>
@@ -80,6 +82,7 @@ export default function Home() {
           </Button>
         </a>
       </div>
+
     </main>
   );
 }

@@ -7,6 +7,14 @@ export async function classifyArxiv(input: string) {
         return { kind: "id", id: s };
     }
 
+    // direct id like arXiv:2410.12345 or arXiv:2410.12345v2
+    if (/^arXiv:\d{4}\.\d{5}(v\d+)?$/i.test(s)) {
+        console.log(s)
+        const id = s.replace(/^arXiv:/i, "");  // remove arXiv: prefix
+        console.log(id)
+        return { kind: "id", id: id };
+    }
+
     // Try for arxiv url
     try {
         const u = new URL(s);

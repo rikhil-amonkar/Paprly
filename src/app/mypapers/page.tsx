@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Typewriter } from "react-simple-typewriter";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import dynamic from "next/dynamic";
 
 const SearchIcon = dynamic(() => import("lucide-react").then(m => m.Search), {
@@ -35,6 +36,9 @@ export default function Home() {
     const [papers, setPapers] = useState<Paper[]>([]);  // Start with empty paper list
     const [loading, setLoading] = useState(true);  // Screen should start loading
     const [error, setError] = useState<string | null>(null);
+    const [viewPaper, setViewPaper] = useState<Paper | null>(null);
+    const [summary, setSummary] = useState<string | null>(null);
+    const [loadingSummary, setLoadingSummary] = useState(false);
 
     // Fetch all the papers
     async function load() {
@@ -45,7 +49,7 @@ export default function Home() {
 
         // Fetch the papers
         try {
-            const res = await fetch("api/papers", { cache: "no-store" });
+            const res = await fetch("/api/papers", { cache: "no-store" });
             const data = await res.json();  // Convert data into json format
 
             // Update paper state
@@ -61,13 +65,25 @@ export default function Home() {
     // Runs load() when the page first opens (when paper list starts empty)
     useEffect(() => { load(); }, []);
 
+    // Function to view a paper (opens dialog)
+    function viewPaperDetails(paper: Paper) {
+        setViewPaper(paper);
+        setSummary(null);  // Reset summary when viewing a new paper
+    }
+
+    // Function to close the paper view dialog
+    function closePaperDetails() {
+        setViewPaper(null);
+        setSummary(null);  // Reset summary when closing the dialog
+    }
+
     // Function to delete a paper
     async function deletePaper(id: string) {
 
         // Confirm if user wants to delete selected paper
         if (!confirm("Delete this paper?")) return;
 
-        const res = await fetch(`api/papers/${id}`, {
+        const res = await fetch(`/api/papers/${id}`, {
             method: "DELETE",
         });
         if (!res.ok) {
@@ -114,6 +130,36 @@ export default function Home() {
         }
     }
 
+    // Summarize paper function
+    async function summarizePaper(paperText: string) {
+
+        setLoadingSummary(true);  // Set loading state
+
+        try {
+
+            const res = await fetch(`/api/summarize`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ text: paperText, max_length: 150 }),  // Adjust max_length as needed
+            });
+
+            // Check for summarization error
+            if (!res.ok) {
+                throw new Error("Summarization failed");
+            }
+
+            // Get summary from response
+            const data = await res.json();
+            return data.summary as string;
+
+        } catch (error: any) {  // Catch any errors
+            console.error("Error during summarization:", error);
+            return null;
+        } finally {
+            setLoadingSummary(false);  // Reset loading state
+        }
+    }
+
     // **** Front End Componenets ****
 
     // Return frontend HTML
@@ -128,9 +174,9 @@ export default function Home() {
                 <h1 className="text-3xl font-bold text-gray-700">
                     <Typewriter
                         words={[
-                            "Manage Your Research Papers",
+                            "Find Trending Research Papers",
                             "Add Papers from arXiv",
-                            "Create Your Own Summaries"]}
+                            "Create Your Own Summaries with AI",]}
                         loop={0}
                         cursor
                         cursorStyle="_"
@@ -174,7 +220,7 @@ export default function Home() {
             </div>
 
             {/* Card component for paper list */}
-            <Card className="bg-gray-100 shadow-lg rounded-xl">
+            <Card className="bg-white shadow-lg rounded-xl">
                 <CardContent>
                     <CardTitle className="mt-6 text-gray-700">Library</CardTitle>
                 </CardContent>
@@ -193,7 +239,7 @@ export default function Home() {
                                             href={p.url || "#"}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="font-medium hover:underline text-gray-700 font-semibold text-2xl">
+                                            className="hover:underline space-y-1 text-gray-700 font-semibold">
                                             {p.title}
                                         </a>
                                         {p.abstract && (
@@ -202,19 +248,124 @@ export default function Home() {
                                             </p>
                                         )}
                                     </div>
-                                    <Button
-                                        variant="ghost"
-                                        className="text-xl text-red-500 font-semibold hover:bg-gray-200 transition-colors flex text-center h-20"
-                                        onClick={() => deletePaper(p.id)}
-                                    >
-                                        Delete
-                                    </Button>
+
+                                    {/* Buttons for paper actions */}
+                                    <div>
+                                        <Button
+                                            variant="ghost"
+                                            className="text-md text-gray-700 font-semibold hover:bg-gray-200 transition-colors flex text-center h-10"
+                                            onClick={() => viewPaperDetails(p)}
+                                        >
+                                            View
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            className="text-md text-red-500 font-semibold hover:bg-gray-200 transition-colors flex text-center h-10"
+                                            onClick={() => deletePaper(p.id)}
+                                        >
+                                            Delete
+                                        </Button>
+                                    </div>
+
                                 </div>
                             </li>
                         ))}
                     </ul>
                 </CardContent>
             </Card>
+
+            {/* Dialog for viewing paper details (outside of list of each paper) */}
+            <Dialog open={!!viewPaper} onOpenChange={(open) => { if (!open) closePaperDetails(); }}>
+                <DialogContent className="max-w-5xl max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle className="text-lg font-bold text-gray-700">
+                            {viewPaper?.title}
+                        </DialogTitle>
+                        <p className="text-gray-500">{"arXiv ● "}{viewPaper?.createdAt.slice(0, 10)}</p>
+                    </DialogHeader>
+
+                    {/* Paper details content */}
+                    <div className="space-y-4 text-gray-700">
+
+                        {viewPaper?.abstract && (
+                            <div>
+                                <h3 className="font-semibold">Abstract</h3>
+                                <p className="whitespace-pre-wrap">{viewPaper.abstract}</p>
+                            </div>
+                        )}
+
+                        {viewPaper?.problem && (
+                            <div>
+                                <h3 className="font-semibold">Problem</h3>
+                                <p className="whitespace-pre-wrap">{viewPaper.problem}</p>
+                            </div>
+                        )}
+
+                        {viewPaper?.method && (
+                            <div>
+                                <h3 className="font-semibold">Method</h3>
+                                <p className="whitespace-pre-wrap">{viewPaper.method}</p>
+                            </div>
+                        )}
+
+                        {viewPaper?.result && (
+                            <div>
+                                <h3 className="font-semibold">Results</h3>
+                                <p className="whitespace-pre-wrap">{viewPaper.result}</p>
+                            </div>
+                        )}
+
+                        {viewPaper?.limitations && (
+                            <div>
+                                <h3 className="font-semibold">Limitations</h3>
+                                <p className="whitespace-pre-wrap">{viewPaper.limitations}</p>
+                            </div>
+                        )}
+
+                        {/* Button to summarize abstract using AI */}
+                        {loadingSummary && <div className="text-sm text-muted-foreground text-gray-700">Summarizing...</div>}
+
+                        <Button
+                            variant="outline"
+                            disabled={loadingSummary || !viewPaper?.abstract}
+                            className="text-md text-white font-semibold bg-blue-400 hover:bg-blue-300 transition-colors flex text-center h-10"
+                            onClick={async () => {
+                                if (!viewPaper?.abstract) return;  // Do nothing if no abstract
+                                const s = await summarizePaper(viewPaper.abstract);
+                                if (s) setSummary(s);  // Set summary state
+                            }}
+                        >
+                            {loadingSummary ? "Summarizing..." : "Summarize Abstract"}
+                        </Button>
+
+                        {summary && (
+                            <div>
+                                <h3 className="font-semibold">AI-Generated Summary</h3>
+                                <p className="whitespace-pre-wrap">{summary}</p>
+                            </div>
+                        )}
+
+                    </div>
+
+                    {/* Dialog footer with arXiv link */}
+                    <DialogFooter className="mt-4">
+                        {viewPaper?.url && (
+                            <div>
+                                <a
+                                    href={viewPaper.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-blue-500 hover:underline"
+                                >
+                                    View on arXiv
+                                </a>
+                            </div>
+                        )}
+                    </DialogFooter>
+
+                </DialogContent>
+
+            </Dialog>
 
         </main>
 
