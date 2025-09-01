@@ -2,6 +2,8 @@
 export async function classifyArxiv(input: string) {
     const s = input.trim();
 
+    console.log("Classifying arXiv input:", s);
+
     // direct id like 2410.12345 or 2410.12345v2
     if (/^\d{4}\.\d{5}(v\d+)?$/i.test(s)) {
         return { kind: "id", id: s };
@@ -9,10 +11,26 @@ export async function classifyArxiv(input: string) {
 
     // direct id like arXiv:2410.12345 or arXiv:2410.12345v2
     if (/^arXiv:\d{4}\.\d{5}(v\d+)?$/i.test(s)) {
-        console.log(s)
         const id = s.replace(/^arXiv:/i, "");  // remove arXiv: prefix
-        console.log(id)
         return { kind: "id", id: id };
+    }
+
+    // direct id like doi.org/10.48550/arXiv.2505.13252
+    try {
+        const u = new URL(s);
+        if (u.hostname.includes("doi.org")) {
+            const path = u.pathname.replace(/^\/+/g, "");  // remove leading /
+            if (/^10\.48550\/arXiv\.\d{4}\.\d{5}(v\d+)?$/i.test(path)) {
+                const id = path.replace(/^10\.48550\/arXiv\./i, "");  // remove 10.48550/arXiv. prefix
+                return { kind: "id", id: id };
+            }
+        }
+        if (/^doi\.org\/10\.48550\/arXiv\.\d{4}\.\d{5}(v\d+)?$/i.test(s)) {
+            const id = s.replace(/^doi\.org\/10\.48550\/arXiv\./i, "");  // remove doi.org/10.48550/arXiv. prefix
+            return { kind: "id", id: id };
+        }
+    } catch (e) {
+        // throw error if not a url
     }
 
     // Try for arxiv url

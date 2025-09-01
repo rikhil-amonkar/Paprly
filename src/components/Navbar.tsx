@@ -63,7 +63,7 @@ export default function Navbar() {
                                         size="sm"
                                         className={[
                                             "flex items-center space-x-2 text-gray-700 font-semibold",
-                                            !isActive && "bg-transparent hover:bg-gray-200",
+                                            !isActive && "bg-transparent hover:bg-gray-200 transform transition-transform duration-200 hover:-translate-y-1",
                                             isActive && "bg-gray-200",
                                         ].join(" ")}
                                     >

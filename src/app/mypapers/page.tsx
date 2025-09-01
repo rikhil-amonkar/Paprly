@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Typewriter } from "react-simple-typewriter";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Trash2 } from "lucide-react";
-import { EyeIcon } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import dynamic from "next/dynamic";
 
 const SearchIcon = dynamic(() => import("lucide-react").then(m => m.Search), {
@@ -177,7 +177,7 @@ export default function Home() {
                 <h1 className="text-3xl font-bold text-gray-700">
                     <Typewriter
                         words={[
-                            "Find Trending Research Papers",
+                            "Explore Trending Research Papers",
                             "Add Papers from arXiv",
                             "Create Your Own Summaries with AI",]}
                         loop={0}
@@ -189,11 +189,18 @@ export default function Home() {
                     />
                 </h1>
 
+                <p className="text-gray-400 text-lg font-medium">AI-powered research discovery with experiment ideation, contradiction detection, and automated literature reviews.</p>
+
                 {/* Card component for arXiv url paper add */}
                 <form onSubmit={ingestPaper} className="max-w-2xl mx-auto">
 
                     {/* Input field for arXiv URL */}
-                    <div className="relative">
+                    <div
+                        className={[
+                            "relative transform hover:-translate-y-1 transition-transform",
+                            "transition-shadow duration-200 shadow-md hover:shadow-xl"
+                        ].join("")}
+                    >
                         <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-4 text-gray-400" />
                         <Input
                             className="pl-12 h-12 text-lg bg-card text-gray-700"
@@ -224,14 +231,14 @@ export default function Home() {
 
             {/* Div component for paper list */}
             <div className="bg-transparent">
-                <h1 className="mt-6 text-gray-700 text-3xl font-semibold">Library</h1>
+                <h1 className="mt-6 text-gray-700 text-3xl font-semibold pb-2">Library</h1>
                 <div className="mt-4">
 
                     {/* Status messages */}
-                    {loading && <div className="text-sm text-muted-foreground text-gray-700">Loading...</div>}
+                    {loading && <div className="text-sm text-muted-foreground text-gray-700 justify-center text-center">Loading...</div>}
                     {error && <div className="text-sm text-red-600">{error}</div>}
                     {!loading && papers.length == 0 && (
-                        <div className="text-sm text-muted-foreground text-gray-700">No papers saved.</div>
+                        <div className="text-sm text-muted-foreground text-gray-700 justify-center text-center">No papers saved.</div>
                     )}
 
                     {/* Grid for papers */}
@@ -247,16 +254,17 @@ export default function Home() {
                             >
                                 <div className="flex items-start justify-between gap-4">
                                     <div className="space-y-1">
-                                        <a
-                                            href={p.url || "#"}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="hover:underline space-y-1 text-gray-700 font-semibold">
+                                        <p
+                                            className="hover:text-sky-500 space-y-1 text-gray-700 font-semibold"
+                                            onClick={() => viewPaperDetails(p)}
+                                            style={{ cursor: "pointer" }}
+                                            title={p.title}
+                                        >
                                             {p.title}
-                                        </a>
-                                        <p className="text-sm text-gray-500">{"arXiv ● "}{p.createdAt.slice(0, 10)}</p>
+                                        </p>
+                                        <p className="text-sm text-gray-400">{"arXiv ● "}{p.createdAt.slice(0, 10)}</p>
                                         {p.abstract && (
-                                            <p className="text-sm text-muted-foreground line-clamp-6 text-gray-700">
+                                            <p className="text-sm text-muted-foreground line-clamp-6 text-gray-400">
                                                 {p.abstract}
                                             </p>
                                         )}
@@ -267,9 +275,15 @@ export default function Home() {
                                         <Button
                                             variant="ghost"
                                             className="text-md text-gray-700 font-semibold hover:bg-gray-200 transition-colors flex text-center h-10"
-                                            onClick={() => viewPaperDetails(p)}
+                                            asChild
                                         >
-                                            <EyeIcon className="w-4 h-4" />
+                                            <a
+                                                href={p.url || "#"}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="hover:text-sky-500 space-y-1 text-gray-700 font-semibold">
+                                                <ExternalLink className="w-4 h-4 text-gray-400" />
+                                            </a>
                                         </Button>
                                         <Button
                                             variant="ghost"
@@ -289,7 +303,7 @@ export default function Home() {
 
             {/* Dialog for viewing paper details (outside of list of each paper) */}
             <Dialog open={!!viewPaper} onOpenChange={(open) => { if (!open) closePaperDetails(); }}>
-                <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+                <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle className="text-lg font-bold text-gray-700">
                             {viewPaper?.title}
@@ -366,12 +380,11 @@ export default function Home() {
                         {viewPaper?.url && (
                             <div>
                                 <a
-                                    href={viewPaper.url}
+                                    href={viewPaper.url || "#"}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="text-blue-500 hover:underline"
                                 >
-                                    View on arXiv
+                                    <ExternalLink className="w-5 h-5 text-gray-400 hover:text-sky-500" />
                                 </a>
                             </div>
                         )}

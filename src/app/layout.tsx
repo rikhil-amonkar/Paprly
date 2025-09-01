@@ -24,15 +24,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="bg-white overscroll-none">
-      <body className="min-h-screen bg-gray-100 antialiased">
-
-        {/* Navbar */}
+    <html lang="en" className="h-full bg-gray-50" suppressHydrationWarning>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} 
+                    min-h-dvh bg-gray-50 text-gray-900 antialiased overscroll-none`}
+      >
         <Navbar />
-
-        {/* Main page content */}
-        <main id="scroll-root" className="max-w-3xl mx-auto px-4">{children}</main>
-
+        <main id="scroll-root" className="mx-auto max-w-3xl px-4">
+          {children}
+        </main>
       </body>
     </html>
   );
