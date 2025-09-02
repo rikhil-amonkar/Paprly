@@ -1,8 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 from transformers import pipeline
+import arxiv
 
 # Define the FastAPI app
 app = FastAPI(title="Paprly Server", version="0.1.0")
@@ -20,6 +21,13 @@ app.add_middleware(
     allow_methods=["*"],  # Allow all methods
     allow_headers=["*"],  # Allow all headers
 )
+
+# ***** App Health *****
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+# ***** Summarization Endpoint *****
 
 # Define a Pydantic model for the request body
 class Summarize(BaseModel):
@@ -52,3 +60,44 @@ def model_summary(payload: Summarize):
     # Extract the summary text from the result
     summary = res[0]['summary_text']
     return {"summary": summary}  # Return the summary as JSON
+
+# ***** ArXiv Search Endpoint *****
+
+# Define a Pydantic model for the search request
+class ArxivSearch(BaseModel):
+    query: str
+    max_results: Optional[int] = 5  # Default max results
+    sort_by: Optional[str] = "SubmittedDate"  # Default sort by
+    sort_order: Optional[str] = "Descending"  # Default sort order
+
+# Define the arXiv search endpoint
+@app.post("/arxiv_search")
+def arxiv_search(payload: ArxivSearch):
+
+    try:
+        # Perform the search using the arxiv library
+        search = arxiv.Search(
+            query=payload.query,
+            max_results=payload.max_results,
+            sort_by=getattr(arxiv.SortCriterion, payload.sort_by, arxiv.SortCriterion.SubmittedDate),
+            sort_order=getattr(arxiv.SortOrder, payload.sort_order, arxiv.SortOrder.Descending)
+        )
+
+        # Collect results
+        results = []
+        for result in search.results():
+
+            # All details for paper retrieval
+            results.append({
+                "id": result.entry_id.split("/")[-1], # arXiv ID (removed from link)
+                "title": result.title,
+                "abstract": result.summary,
+                "contributors": ", ".join(author.name for author in result.authors),
+                "datePublished": str(result.published.isoformat()) if result.published else None,  # Convert datetime to ISO format
+                "url": result.entry_id  # Full paper link
+            })
+
+        return {"results": results}  # Return the search results as JSON
+    except Exception as e:
+        return {"error": str(e)}
+
