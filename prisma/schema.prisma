@@ -13,7 +13,7 @@ datasource db {
 // Each paper has a title, abstract, problem, method, results, limitations, and createdAt timestamp
 model Paper {
   id            String   @id @default(cuid())
-  arxivId       String // Unique arXiv ID for paper
+  arxivId       String   @unique // Unique arXiv ID for paper
   url           String // General URL (canonical link like https://arxiv.org/abs/2410.12345, etc)
   title         String
   contributors  String?

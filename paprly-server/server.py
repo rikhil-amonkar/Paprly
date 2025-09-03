@@ -4,6 +4,10 @@ from pydantic import BaseModel
 from typing import Optional, List
 from transformers import pipeline
 import arxiv
+import requests
+import feedparser
+from fastapi import HTTPException
+import re
 
 # Define the FastAPI app
 app = FastAPI(title="Paprly Server", version="0.1.0")
@@ -101,3 +105,35 @@ def arxiv_search(payload: ArxivSearch):
     except Exception as e:
         return {"error": str(e)}
 
+# Define a id based arxiv search endpoint
+@app.get("/arxiv_paper/{arxiv_id}")
+def arxiv_paper(arxiv_id: str):
+    try:
+        # Strip version suffix
+        base_id = re.sub(r"v\d+$", "", arxiv_id)
+
+        # Fetch the paper from the API directly
+        url = f"http://export.arxiv.org/api/query?id_list={base_id}"
+        r = requests.get(url, timeout=10)
+        if r.status_code != 200:
+            raise HTTPException(status_code=502, detail="arXiv API error")
+
+        # Check if paper not found
+        feed = feedparser.parse(r.text)
+        if not feed.entries:
+            raise HTTPException(status_code=404, detail=f"Paper {arxiv_id} not found")
+
+        entry = feed.entries[0]
+
+        # Return details
+        return {
+            "id": entry.id.split("/")[-1],
+            "title": entry.title,
+            "abstract": entry.summary,
+            "contributors": ", ".join(a.name for a in entry.authors),
+            "datePublished": entry.published if hasattr(entry, "published") else None,
+            "url": entry.id
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

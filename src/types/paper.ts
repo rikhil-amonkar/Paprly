@@ -1,6 +1,6 @@
 // Empty paper schema
 export type Paper = {
-    id: string;
+    id?: string;  // Make optional for search cases
     arxivId?: string;
     url?: string;
     title: string;

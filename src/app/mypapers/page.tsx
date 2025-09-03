@@ -80,7 +80,7 @@ export default function Home() {
         if (arxivId) {
             setBookmarkedIds(prev => {
                 const next = new Set(prev);
-                next.delete(arxivId);
+                next.delete(normalizeArxivId(arxivId));
                 return next;
             });
         }
@@ -89,7 +89,7 @@ export default function Home() {
         setSearchResults(prev =>
             prev.map(p => ({
                 ...p,
-                isBookmarked: p.arxivId ? bookmarkedIds.has(p.arxivId) : false
+                isBookmarked: normalizeArxivId(p.arxivId) ? bookmarkedIds.has(normalizeArxivId(p.arxivId)) : false
             }))
         )
     }
@@ -109,6 +109,7 @@ export default function Home() {
 
         // Fetch search results from API
         try {
+
             const res = await fetch(`/api/search?q=${encodeURIComponent(q)}&max=5`, {
                 method: "GET",
                 headers: { "Content-Type": "application/json" },
@@ -123,9 +124,9 @@ export default function Home() {
 
             // Update search result states right away
             setSearchResults(
+                // Drop dbId and keep only arxiv for search
                 arr.map((r: any) => ({
-                    id: r.id,
-                    arxivId: r.id,
+                    arxivId: normalizeArxivId(r.id),  // Normalize
                     url: r.url,
                     title: r.title,
                     abstract: r.abstract ?? null,
@@ -145,10 +146,13 @@ export default function Home() {
         }
     }
 
+    // Normalize arxivId helper
+    const normalizeArxivId = (id?: string | null) => id?.replace(/v\d+$/, "") ?? "";
+
     // Handle bookmarks by id of paper
-    const paperKey = (p: Paper) => (p.arxivId || p.url || "");
+    const paperKey = (p: Paper) => (normalizeArxivId(p.arxivId) || p.url || "");
     const isBookmarked = (p: Paper) =>
-        p.arxivId ? bookmarkedIds.has(p.arxivId) : false;
+        p.arxivId ? bookmarkedIds.has(normalizeArxivId(p.arxivId)) : false;
 
     // Bookmark paper (save to the library)
     async function toggleBookmark(p: Paper) {
@@ -160,7 +164,7 @@ export default function Home() {
 
             // Already bookmarked → delete
             const saved = papers.find(b => b.arxivId === p.arxivId);
-            if (saved) {
+            if (saved?.id) {
                 await deletePaper(saved.id, saved.arxivId);
             }
 
@@ -170,8 +174,16 @@ export default function Home() {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    ...p,
-                    arxivId: p.arxivId || p.id  // Normalize
+                    arxivId: (p.arxivId || p.id)?.replace(/v\d+$/, ""),  // Normalize
+                    url: p.url,
+                    title: p.title,
+                    abstract: p.abstract ?? null,
+                    contributors: p.contributors ?? null,
+                    datePublished: p.datePublished ?? null,
+                    problem: p.problem ?? null,
+                    method: p.method ?? null,
+                    results: p.results ?? null,
+                    limitations: p.limitations ?? null,
                 }),
             });
 
@@ -277,7 +289,7 @@ export default function Home() {
 
                             // Standardized paper card (searching)
                             <PaperCard
-                                key={p.id || p.url || i}
+                                key={normalizeArxivId(p.arxivId) || p.url || i}
                                 paper={p}
                                 isBookmarked={isBookmarked(p)}
                                 onToggleBookmark={toggleBookmark}  // For bookmarked case
@@ -309,7 +321,11 @@ export default function Home() {
                                 key={p.id || p.url || i}
                                 paper={p}
                                 isBookmarked={isBookmarked(p)}
-                                onDelete={() => deletePaper(p.id, p.arxivId)}  // For delete case
+                                onDelete={() => {
+                                    if (p.id) {
+                                        deletePaper(p.id, p.arxivId)  // For delete case
+                                    }
+                                }}
                             />
 
                         ))}

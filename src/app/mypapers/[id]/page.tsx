@@ -30,6 +30,7 @@ export default async function PaperPage({ params }: { params: Promise<{ id: stri
     return (
 
         <PaperContent paper={paper} />
+
     )
 
 }

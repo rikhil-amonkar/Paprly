@@ -12,11 +12,41 @@ type PaperCardProps = {
     onDelete?: (id: string) => void;
 };
 
+// Helper functions
+
+function internalHref(paper: Paper): string | null {
+    // Saved papers → DB id
+    if (paper.id) {
+        return `/mypapers/${paper.id}`;
+    }
+    // Unsaved search results → arXiv id
+    if (paper.arxivId) {
+        return `/mypapers/arxiv/${paper.arxivId}`;
+    }
+    return null;
+}
+
+function externalPdfHref(paper: Paper): string {
+    if (paper.arxivId) return `https://arxiv.org/pdf/${paper.arxivId}.pdf`;  // Link to arxiv pdf
+    if (paper.url) return paper.url;  // Fallback to site if no PDF exists
+    return "#";
+}
+
+const normalizeArxivId = (id?: string | null) => id?.replace(/v\d+$/, "") ?? "";
+
 // Full standardized papercard look
 export default function PaperCard({ paper, isBookmarked, onToggleBookmark, onDelete }: PaperCardProps) {
 
     // Create a route system for text
     const router = useRouter();
+
+    // Make sure fallback is arxiv route
+    const href =
+        paper?.id
+            ? `/mypapers/${paper.id}`
+            : paper?.arxivId
+                ? `/mypapers/arxiv/${normalizeArxivId(paper.arxivId)}`
+                : null;
 
     return (
         <div
@@ -28,7 +58,7 @@ export default function PaperCard({ paper, isBookmarked, onToggleBookmark, onDel
             <h3
                 className="hover:text-sky-500 text-gray-700 font-semibold cursor-pointer"
                 title={paper.title}
-                onClick={() => router.push(`/mypapers/${paper.id}`)}  // Link to paper details
+                onClick={() => href && router.push(href)}
             >
                 {paper.title ?? "Untitled"}
             </h3>
@@ -55,7 +85,7 @@ export default function PaperCard({ paper, isBookmarked, onToggleBookmark, onDel
                 {/* Open link */}
                 <Button variant="ghost" className="h-10 hover:bg-gray-100" asChild>
                     <a
-                        href={`http://arxiv.org/pdf/${paper?.arxivId}` || paper?.url}  // PDF or default home
+                        href={externalPdfHref(paper)}  // PDF or default home
                         target="_blank"
                         rel="noopener noreferrer"
                     >
@@ -87,7 +117,12 @@ export default function PaperCard({ paper, isBookmarked, onToggleBookmark, onDel
                     <Button
                         variant="ghost"
                         className="h-10 text-red-500 hover:bg-gray-100"
-                        onClick={() => onDelete(paper.id)}
+                        onClick={() => {
+                            if (paper.id) {
+                                onDelete(paper.id)
+                            }
+                        }
+                        }
                     >
                         <Trash2 className="w-4 h-4" />
                         <span className="text-sm font-medium">Delete</span>

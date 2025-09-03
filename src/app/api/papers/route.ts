@@ -3,7 +3,24 @@ import { prisma } from "@/lib/db";
 import { Prisma } from "@prisma/client"
 
 // Find all papers from databse
-export async function GET() {
+export async function GET(req: Request) {
+
+    // Return some object for arxiv papers to prevent null
+    const { searchParams } = new URL(req.url)
+    const arxivId = searchParams.get("arxivId")
+
+    if (arxivId) {
+        const normalized = arxivId.replace(/v\d+$/, ""); // strip version
+        const paper = await prisma.paper.findFirst({
+            where: {
+                OR: [
+                    { arxivId },
+                    { arxivId: normalized },
+                ],
+            },
+        });
+        return NextResponse.json(paper ?? {});
+    }
 
     // Order all papers by data created
     const papers = await prisma.paper.findMany({
@@ -15,20 +32,24 @@ export async function GET() {
 // Create a new paper to add to table
 export async function POST(req: Request) {
     try {
-
-        // Parse the request body
         const body = await req.json();
-
-        // Validate the paper title
-        if (!body.title || typeof body.title != "string" || !body.title.trim()) {
-            return NextResponse.json({ error: "Title is required" }, { status: 400 });  // Return error if invalid title
+        const rawId = body.arxivId;
+        if (!rawId || typeof rawId !== "string") {
+            return NextResponse.json({ error: "arxivId is required" }, { status: 400 });
         }
 
-        // Insert paper into the database if valid
-        const paper = await prisma.paper.create({
-            data: {
-                arxivId: body.arxivId,
-                url: body.url,
+        const arxivId = rawId.replace(/v\d+$/, ""); // normalize
+        if (!body.title || typeof body.title !== "string" || !body.title.trim()) {
+            return NextResponse.json({ error: "Title is required" }, { status: 400 });
+        }
+
+        // Idempotent write
+        const paper = await prisma.paper.upsert({
+            where: { arxivId },         // requires @unique
+            update: {},                 // nothing to update for now
+            create: {
+                arxivId,
+                url: body.url ?? null,
                 title: body.title.trim(),
                 abstract: body.abstract ?? null,
                 contributors: body.contributors ?? null,
@@ -40,24 +61,11 @@ export async function POST(req: Request) {
             },
         });
 
-        // Return the created paper
-        return NextResponse.json(paper, { status: 201 });
-
-    } catch (error: unknown) {
-
-        if (error instanceof Prisma.PrismaClientKnownRequestError) {
-
-            // Check for duplicate paper saving
-            if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-                return NextResponse.json(
-                    { error: "Paper already saved." },
-                    { status: 409 }   // ✅ conflict
-                );
-            }
-        }
-
-        // Check for unknown errors
-        console.error("Unexpected error in POST /api/papers:", error);
+        // 201 on first create, 200 if it already existed (nice to know)
+        const status = paper.createdAt.getTime() > Date.now() - 5_000 ? 201 : 200;
+        return NextResponse.json(paper, { status });
+    } catch (err: any) {
+        console.error("Unexpected error in POST /api/papers:", err);
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }

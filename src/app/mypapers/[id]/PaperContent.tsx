@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { use, useEffect, useState } from "react";
 import { Paper } from "@prisma/client";
 import { Button } from "@/components/ui/button";
-import { Download, BookOpen, Plus, Lightbulb, ExternalLink } from "lucide-react";
+import { Download, BookOpen, Plus, Lightbulb, ExternalLink, Bookmark } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useRouter } from "next/navigation";
 
 export default function PaperContent({ paper }: { paper: Paper }) {
     const [summary, setSummary] = useState<string | null>(null);
@@ -41,6 +42,73 @@ export default function PaperContent({ paper }: { paper: Paper }) {
         } finally {
             setLoadingSummary(false);  // Reset loading state
         }
+    }
+
+    // Handle bookmark feature inside paper view
+    const [isSaved, setIsSaved] = useState(false)
+
+    // Check if paper is already saved in db
+    useEffect(() => {
+        const check = async () => {
+            if (!paper.arxivId && !paper.id) return;
+            const arxivId = (paper.arxivId ?? paper.id)?.replace(/v\d+$/, "");
+            const res = await fetch(`/api/papers?arxivId=${arxivId}`, { cache: "no-store" });
+            if (res.ok) {
+                const data = await res.json();
+                if (data && data.id) setIsSaved(true);
+            }
+        };
+        check();
+    }, [paper.arxivId, paper.id]);
+
+    // Initialize router to push to page
+    const router = useRouter();
+
+    // If save if needed, handle
+    async function handleSave() {
+        const arxivId = (paper.arxivId ?? paper.id)?.replace(/v\d+$/, "");
+        if (!arxivId) {
+            alert("Missing arXiv ID");
+            return;
+        }
+
+        const payload = {
+            arxivId,                         // Make sure arxivId is there
+            url: paper.url,
+            title: paper.title,
+            abstract: paper.abstract ?? null,
+            contributors: paper.contributors ?? null,
+            datePublished: paper.datePublished ?? null,
+            problem: paper.problem ?? null,
+            method: paper.method ?? null,
+            results: paper.results ?? null,
+            limitations: paper.limitations ?? null,
+        };
+
+        console.log("PaperContent → POST /api/papers payload:", payload);
+
+        // Fetch the current paper state
+        const res = await fetch(`/api/papers`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+        });
+
+        if (res.status === 409) {
+            setIsSaved(true);
+            return;
+        }
+        if (!res.ok) {
+            const j = await res.json().catch(() => ({}));
+            alert(j.error ?? "Failed to save");
+            return;
+        }
+
+        const saved = await res.json();
+        setIsSaved(true);
+
+        // Redirect to db paper view
+        router.push(`/mypapers/${saved.id}`)
     }
 
     return (
@@ -92,6 +160,24 @@ export default function PaperContent({ paper }: { paper: Paper }) {
                             Open
                         </a>
 
+                    </Button>
+
+                    {/* Bookmark */}
+                    <Button
+                        variant="ghost"
+                        className="h-10 hover:bg-gray-100"
+                        onClick={handleSave}
+                        disabled={isSaved}  // Disable button if already saved
+                        aria-label="Bookmark"
+                        title={isSaved ? "Remove bookmark" : "Bookmark"}
+                    >
+                        <Bookmark
+                            className={[
+                                "w-4 h-4 transition-colors",
+                                isSaved ? "fill-yellow-500 text-yellow-500" : "text-gray-500"
+                            ].join(" ")}
+                        />
+                        <span className="text-sm font-medium">{isSaved ? "Saved" : "Save"}</span>
                     </Button>
 
                 </div>
