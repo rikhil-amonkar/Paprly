@@ -27,9 +27,12 @@ export async function POST(req: Request) {
         const project = await prisma.project.create({
             data: {
                 title: body.title.trim(),
-                abstract: body.abstract ?? null,  // Abstract is optional and default to null
-                theme: body.theme ?? "",  // Default theme is empty string
-                contributors: body.contributors ?? ""  // Default contributors is empty string
+                goal: body.goal ?? null,  // Goal is optional and default to null
+                contributors: body.contributors ?? "",  // Default contributors is empty string
+                ideas: body.ideas ?? "",  // Default ideas is empty string
+                notes: body.notes ?? "",
+                related: body.notes ?? "",
+                queue: body.queue ?? ""
             },
         });
 

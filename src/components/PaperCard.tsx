@@ -10,11 +10,10 @@ type PaperCardProps = {
     isBookmarked: boolean;
     onToggleBookmark?: (paper: Paper) => void;
     onDelete?: (id: string) => void;
-    onViewDetails?: (paper: Paper) => void;
 };
 
 // Full standardized papercard look
-export default function PaperCard({ paper, isBookmarked, onToggleBookmark, onDelete, onViewDetails }: PaperCardProps) {
+export default function PaperCard({ paper, isBookmarked, onToggleBookmark, onDelete }: PaperCardProps) {
 
     // Create a route system for text
     const router = useRouter();

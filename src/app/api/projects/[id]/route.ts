@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { error } from "console";
 
 // Update details of paper
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -18,15 +17,16 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         }
 
         // Call prisma.project.update() with:
-        //    - where: { id: params.id }
-        //    - data: include fields from body (title, abstract, etc.)
         const updated = await prisma.project.update({
             where: { id: String(id) },
             data: {
                 title: body.title,
-                abstract: body.abstract,
-                theme: body.theme,
-                contributors: body.contributors
+                goal: body.goal,
+                contributors: body.contributors,
+                ideas: body.ideas,
+                notes: body.notes,
+                related: body.related,
+                queue: body.queue
             },
         });
 

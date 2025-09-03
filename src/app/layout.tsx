@@ -30,7 +30,7 @@ export default function RootLayout({
                     min-h-dvh bg-gray-50 text-gray-900 antialiased overscroll-none`}
       >
         <Navbar />
-        <main id="scroll-root" className="mx-auto max-w-5xl px-4">
+        <main id="scroll-root" className="mx-auto max-w-7xl px-4">
           {children}
         </main>
       </body>

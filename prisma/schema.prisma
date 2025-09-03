@@ -34,9 +34,12 @@ model Paper {
 model Project {
   id           String   @id @default(cuid())
   title        String
-  abstract     String?  @default("")
-  theme        String? // e.g., "Machine Learning", "Computer Vision", etc.
-  contributors String?  @default("") // CSV of contributors (for now)
+  goal         String?  @default("")
+  contributors String?
+  ideas        String?
+  notes        String?  @default("")
+  related      String?  @default("")
+  queue        String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   papers       Paper[]  @relation("ProjectPapers") // Many-to-many relationship with papers

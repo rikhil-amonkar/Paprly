@@ -314,11 +314,9 @@ export default function Home() {
 
                         ))}
                     </div>
+
                 </div>
             </div>
-
-            {/* Dialog for viewing paper details (outside of list of each paper) */}
-
 
         </main>
 

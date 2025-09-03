@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
-import { Search, Upload, BookOpen, FolderOpen, Settings, Paperclip } from "lucide-react";
+import { Search, Upload, BookOpen, FolderOpen, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import dynamic from "next/dynamic";
 
@@ -14,7 +14,7 @@ const SearchIcon = dynamic(() => import("lucide-react").then(m => m.Search), {
 
 // Navigation items with icons
 const links = [
-    { name: "Papers", href: "/mypapers", icon: Paperclip },
+    { name: "Papers", href: "/mypapers", icon: Search },
     { name: "Projects", href: "/projects", icon: FolderOpen },
     { name: "Compare", href: "/compare", icon: BookOpen },
     { name: "Settings", href: "/settings", icon: Settings },

@@ -1,50 +1,50 @@
 "use client";
-import { METHODS } from "http";
-import { useDebugValue, useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 
 // Already made components (imports for frontend)
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Trash2 } from "lucide-react";
-import { Edit } from "lucide-react";
-
-// Empty project schema
-type Project = {
-    id: string;
-    title: string;
-    abstract?: string | null;
-    theme?: string | null;
-    contributors?: string | null;
-    createdAt: string;
-    updatedAt: string;
-};
+import { Plus } from "lucide-react";
+import ProjectCard from "@/components/ProjectCard";
+import { Project } from "@/types/project";
 
 type Mode = "create" | "edit";  // Define modes for creating and editing projects
 
 // Default home function to run frontend and routes
 export default function Home() {
 
-    // Define state variables (project, title, abstract) -> then states (loading, saving, error)
+    // Define project states
     const [projects, setProjects] = useState<Project[]>([]);  // Start with empty project list
+
+    // Project detail states
     const [title, setTitle] = useState("");  // Start with empty title
-    const [abstract, setAbstract] = useState("");  // Start with empty abstract
-    const [theme, setTheme] = useState("");  // Start with empty theme
+    const [goal, setGoal] = useState("");  // Start with empty goal
     const [contributors, setContributors] = useState("");  // Start with empty contributors
+    const [papers, setPapers] = useState("");  // Start with empty pinned papers
+    const [ideas, setIdeas] = useState("");  // Start with empty generated ideas
+    const [notes, setNotes] = useState("");  // Start with empty notes
+    const [queue, setQueue] = useState("");  // Start with empty expirement queues
+
+    // Saving, open, loading, and error states
     const [saving, setSaving] = useState(false);  // Nothing is saved right away
     const [open, setOpen] = useState(false);  // Dialog is closed by default
     const [loading, setLoading] = useState(true);  // Screen should start loading
     const [error, setError] = useState<string | null>(null);  // No error at start
+
+    // Editing project states
     const [mode, setMode] = useState<Mode>("create");  // Start in create mode
     const [editingProject, setEditingProject] = useState<Project | null>(null);  // No project is being edited at start
 
     // Reset form fields and open dialog for creating a new project
     function resetForm() {
         setTitle("");
-        setAbstract("");
-        setTheme("");
+        setGoal("");
+        setPapers("");
+        setIdeas("");
+        setNotes("");
+        setQueue("");
         setContributors("");
         setEditingProject(null);
         setMode("create");
@@ -62,8 +62,10 @@ export default function Home() {
         setMode("edit");
         setEditingProject(p);
         setTitle(p.title);
-        setAbstract(p.abstract ?? "");
-        setTheme(p.theme ?? "");
+        setGoal(p.goal ?? "");
+        setIdeas(p.ideas ?? "");
+        setNotes(p.notes ?? "");
+        setQueue(p.queue ?? "");
         setContributors(p.contributors ?? "");
         setOpen(true);
     }
@@ -95,8 +97,10 @@ export default function Home() {
 
     // Trim whitespace from input fields
     const trimmedTitle = title.trim();
-    const trimmedAbstract = abstract.trim();
-    const trimmedTheme = theme.trim();
+    const trimmedGoal = goal.trim()
+    const trimmedIdeas = ideas.trim();
+    const trimmedNotes = notes.trim();
+    const trimmedQueue = queue.trim();
     const trimmedContributors = contributors.trim();
 
     // Check if form content is different from the original project data
@@ -108,11 +112,13 @@ export default function Home() {
         // Check if any field has changed
         return (
             norm(o.title) !== trimmedTitle ||
-            norm(o.abstract) !== trimmedAbstract ||
-            norm(o.theme) !== trimmedTheme ||
+            norm(o.goal) !== trimmedGoal ||
+            norm(o.ideas) !== trimmedIdeas ||
+            norm(o.notes) !== trimmedNotes ||
+            norm(o.queue) !== trimmedQueue ||
             norm(o.contributors) !== trimmedContributors
         );
-    }, [mode, editingProject, trimmedTitle, trimmedAbstract, trimmedTheme, trimmedContributors]);
+    }, [mode, editingProject, trimmedTitle, trimmedGoal, trimmedIdeas, trimmedNotes, trimmedQueue, trimmedContributors]);
 
     // Function to create or edit a project based on the current mode
     async function handleSubmit(e: React.FormEvent) {  // Create a form with React
@@ -136,7 +142,7 @@ export default function Home() {
                 const res = await fetch("/api/projects", {
                     method: "POST",  // Specify method (posting project)
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ title: trimmedTitle, abstract: trimmedAbstract, theme: trimmedTheme, contributors: trimmedContributors }),  // Sends JSON format string to backend
+                    body: JSON.stringify({ title: trimmedTitle, goal: trimmedGoal, ideas: trimmedIdeas, notes: trimmedNotes, queue: trimmedQueue, contributors: trimmedContributors }),  // Sends JSON format string to backend
                 });
 
                 // Send created project but check for invalid format
@@ -149,8 +155,10 @@ export default function Home() {
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                         title: trimmedTitle,
-                        abstract: trimmedAbstract || null,
-                        theme: trimmedTheme || null,
+                        goal: trimmedGoal || null,
+                        ideas: trimmedIdeas || null,
+                        notes: trimmedNotes || null,
+                        queue: trimmedQueue || null,
                         contributors: trimmedContributors || null,
                     }),
                 });
@@ -203,7 +211,8 @@ export default function Home() {
                             className="bg-gray-700 text-white font-semibold hover:bg-gray-500 my-4"
                             onClick={openCreateDialog}
                         >
-                            + Add Project
+                            <Plus />
+                            Add Project
                         </Button>
                     </DialogTrigger>
 
@@ -225,17 +234,10 @@ export default function Home() {
                             />
                             <Textarea
                                 className="placeholder-gray-400 text-gray-700"
-                                placeholder="Abstract (optional)"
-                                rows={5}
-                                value={abstract}
-                                onChange={(e) => setAbstract(e.target.value)}
-                            />
-                            <Textarea
-                                className="placeholder-gray-400 text-gray-700"
-                                placeholder="Theme (optional)"
-                                rows={2}
-                                value={theme}
-                                onChange={(e) => setTheme(e.target.value)}
+                                placeholder="Goal (optional)"
+                                rows={3}
+                                value={goal}
+                                onChange={(e) => setGoal(e.target.value)}
                             />
                             <Textarea
                                 className="placeholder-gray-400 text-gray-700"
@@ -273,60 +275,34 @@ export default function Home() {
                 </Dialog>
             </div>
 
-            {/* Card component for project list */}
-            <Card className="bg-white shadow-lg rounded-xl">
-                <CardContent>
-                    <CardTitle className="mt-6 text-gray-700">My Projects</CardTitle>
-                </CardContent>
-                <CardContent className="space-y-4">
-                    {loading && <div className="text-sm text-muted-foreground text-gray-700">Loading...</div>}
+            {/* Div component for project list */}
+            <div className="bg-transparent">
+                <div className="mt-4">
+
+                    {/* Status messages */}
+                    {loading && <div className="text-sm text-muted-foreground text-gray-700 justify-center text-center">Loading...</div>}
                     {error && <div className="text-sm text-red-600">{error}</div>}
                     {!loading && projects.length == 0 && (
-                        <div className="text-sm text-muted-foreground text-gray-700">No projects created.</div>
+                        <div className="text-sm text-muted-foreground text-gray-700 justify-center text-center">No projects created.</div>
                     )}
-                    <ul className="space-y-3">
-                        {projects.map((p) => (
-                            <li key={p.id} className="border rounded-lg p-3 hover:bg-accent">
-                                <div className="flex items-start justify-between gap-4">
-                                    <div>
-                                        <div className="space-y-1 text-gray-700 font-semibold">{p.title}</div>
-                                        {p.title && (
-                                            <p className="text-sm text-muted-foreground line-clamp-2 text-gray-700">
-                                                {"Abstract: "}{p.abstract}<br />
-                                                {"Theme(s): "}{p.theme}<br />
-                                                {"Contributor(s): "}{p.contributors}<br />
-                                            </p>
-                                        )}
-                                        <p className="text-xs text-muted-foreground text-gray-500">
-                                            Created: {new Date(p.createdAt).toLocaleDateString(undefined, {
-                                                year: "numeric",
-                                                month: "short",
-                                                day: "numeric",
-                                            })}
-                                        </p>
-                                    </div>
-                                    <div className="justify-end flex flex-col gap-2">
-                                        <Button
-                                            variant="ghost"
-                                            className="text-md text-red-500 font-semibold hover:bg-gray-200 transition-colors flex text-center h-10"
-                                            onClick={() => deleteProject(p.id)}
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </Button>
-                                        <Button
-                                            variant="ghost"
-                                            className="text-md text-blue-500 font-semibold hover:bg-gray-200 transition-colors flex text-center h-10"
-                                            onClick={() => openEditDialogue(p)}
-                                        >
-                                            <Edit className="w-4 h-4" />
-                                        </Button>
-                                    </div>
-                                </div>
-                            </li>
+
+                    {/* Grid component for project */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {projects.map((p, i) => (
+
+                            // Standardized paper card (saved papers)
+                            <ProjectCard
+                                key={p.id || i}
+                                project={p}
+                                onEdit={openEditDialogue}
+                                onDelete={() => deleteProject(p.id)}  // For delete case
+                            />
+
                         ))}
-                    </ul>
-                </CardContent>
-            </Card>
+                    </div>
+
+                </div>
+            </div>
 
         </main >
 
