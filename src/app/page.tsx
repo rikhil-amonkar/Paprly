@@ -1,11 +1,10 @@
 "use client";
 import { METHODS } from "http";
-import { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 // Already made components (imports for frontend)
 import { Button } from "@/components/ui/button";
 import { Typewriter } from "react-simple-typewriter";
-import { Container } from "lucide-react";
 
 // **** Routing Componenets ****
 
@@ -37,13 +36,13 @@ export default function Home() {
       <header className="space-y-6">
         {/* shared measure: both h1 and p hang from the same left edge */}
         <div>
-          <h1 className="text-7xl font-semibold leading-tight whitespace-pre-line text-gray-700 h-[2.5em] overflow-hidden">
+          <h1 className="text-8xl font-semibold leading-tight whitespace-pre-line text-gray-700 h-[2.5em] overflow-hidden">
             <Typewriter
               words={[
-                "Never start from\nscratch again.",
-                "The AI that reads\nfor you.",
-                "Why read?\nJust know.",
-                "The end of wasted\nresearch time."
+                "Never start from scratch again.",
+                "The AI that reads for you.",
+                "Why read? Just know.",
+                "The end of wasted research time."
               ]}
               loop={0}
               cursor
@@ -56,7 +55,7 @@ export default function Home() {
 
           <p
             className={[
-              "mt-4 text-2xl text-gray-400 pb-8",
+              "mt-4 text-3xl text-gray-400 pb-8",
               "transition-all duration-1000",
               showDesc ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6",
             ].join(" ")}
@@ -68,19 +67,14 @@ export default function Home() {
         </div>
       </header>
 
-      {/* button sits under same measure too to be aligned */}
+      {/* Button sits under same measure too to be aligned */}
       <div>
-        <a href="/mypapers" className="inline-block">
-          <Button
-            className={[
-              "px-20 py-5 text-base rounded-md shadow-md",
-              "bg-blue-400 text-white font-semibold hover:bg-blue-300",
-              "transition-transform duration-200 hover:scale-105",
-            ].join(" ")}
-          >
-            Get Started
-          </Button>
-        </a>
+        <Button
+          asChild
+          className="rounded-md bg-blue-400 text-white text-2xl font-semibold hover:bg-blue-300 h-15 px-10"
+        >
+          <a href="/mypapers">Get Started</a>
+        </Button>
       </div>
 
     </main>

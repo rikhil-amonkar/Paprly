@@ -1,8 +1,9 @@
 "use client";
+
 import { Button } from "@/components/ui/button";
 import { ExternalLink, Bookmark, Trash2 } from "lucide-react";
 import { Paper } from "@/types/paper"
-import { ppid } from "process";
+import { useRouter } from "next/navigation";
 
 type PaperCardProps = {
     paper: Paper;
@@ -15,32 +16,36 @@ type PaperCardProps = {
 // Full standardized papercard look
 export default function PaperCard({ paper, isBookmarked, onToggleBookmark, onDelete, onViewDetails }: PaperCardProps) {
 
+    // Create a route system for text
+    const router = useRouter();
+
     return (
         <div
             key={paper.id || paper.url}
             className="bg-white rounded-xl shadow-md p-5 min-h-[280px] h-full flex flex-col 
-                   transition-transform transition-shadow duration-200 hover:scale-105 hover:shadow-xl"
+                   transition-transform transition-shadow duration-200 hover:-translate-y-1 hover:shadow-xl"
         >
             {/* Title */}
             <h3
                 className="hover:text-sky-500 text-gray-700 font-semibold cursor-pointer"
                 title={paper.title}
-                onClick={() => onViewDetails?.(paper)}  // View paper details
+                onClick={() => router.push(`/mypapers/${paper.id}`)}  // Link to paper details
             >
-                {paper.title}
+                {paper.title ?? "Untitled"}
             </h3>
 
             {/* Metadata */}
             <div className="mt-1 text-sm text-gray-500">
-                {paper.datePublished && <span>{paper.datePublished}</span>}
-                {paper.datePublished && paper.contributors && <span className="mx-2">•</span>}
+                {paper.datePublished && <span>{"Published: "}{paper.datePublished.slice(0, 10)}</span>}
                 {paper.contributors && <span className="line-clamp-1">{paper.contributors}</span>}
             </div>
 
             {/* Abstract */}
-            {paper.abstract && (
-                <p className="mt-2 text-sm line-clamp-6 text-gray-700">{paper.abstract}</p>
-            )}
+            {
+                paper.abstract && (
+                    <p className="mt-2 text-sm line-clamp-6 text-gray-700">{paper.abstract}</p>
+                )
+            }
 
             <div className="flex-1" />
 
@@ -50,7 +55,11 @@ export default function PaperCard({ paper, isBookmarked, onToggleBookmark, onDel
 
                 {/* Open link */}
                 <Button variant="ghost" className="h-10 hover:bg-gray-100" asChild>
-                    <a href={`http://arxiv.org/abs/${paper.id}` || "#"} target="_blank" rel="noopener noreferrer">
+                    <a
+                        href={`http://arxiv.org/pdf/${paper?.arxivId}` || paper?.url}  // PDF or default home
+                        target="_blank"
+                        rel="noopener noreferrer"
+                    >
                         <ExternalLink className="mr-2 h-4 w-4 text-gray-400" />
                         <span className="text-sm font-medium">Open</span>
                     </a>
@@ -61,6 +70,7 @@ export default function PaperCard({ paper, isBookmarked, onToggleBookmark, onDel
                     variant="ghost"
                     className="h-10 hover:bg-gray-100"
                     onClick={() => onToggleBookmark?.(paper)}
+                    disabled={isBookmarked}  // Disable button if already saved
                     aria-label="Bookmark"
                     title={isBookmarked ? "Remove bookmark" : "Bookmark"}
                 >
@@ -86,6 +96,6 @@ export default function PaperCard({ paper, isBookmarked, onToggleBookmark, onDel
                 )}
 
             </div>
-        </div>
+        </div >
     );
 }

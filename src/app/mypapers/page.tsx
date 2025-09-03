@@ -1,13 +1,10 @@
 "use client";
-import { METHODS } from "http";
 import { useEffect, useState } from "react";
 
 // Already made components (imports for frontend)
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Typewriter } from "react-simple-typewriter";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { ExternalLink } from "lucide-react";
 import dynamic from "next/dynamic";
 
 // Import papercard format (standardized)
@@ -27,11 +24,6 @@ export default function Home() {
     const [papers, setPapers] = useState<Paper[]>([]);  // Start with empty paper list
     const [loading, setLoading] = useState(true);  // Screen should start loading
     const [error, setError] = useState<string | null>(null);
-
-    // View paper and summary states
-    const [viewPaper, setViewPaper] = useState<Paper | null>(null);
-    const [summary, setSummary] = useState<string | null>(null);
-    const [loadingSummary, setLoadingSummary] = useState(false);
 
     // Query and search result states
     const [query, setQuery] = useState<string>("");
@@ -68,25 +60,13 @@ export default function Home() {
     // Runs load() when the page first opens (when paper list starts empty)
     useEffect(() => { load(); }, []);
 
-    // Function to view a paper (opens dialog)
-    function viewPaperDetails(paper: Paper) {
-        setViewPaper(paper);
-        setSummary(null);  // Reset summary when viewing a new paper
-    }
-
-    // Function to close the paper view dialog
-    function closePaperDetails() {
-        setViewPaper(null);
-        setSummary(null);  // Reset summary when closing the dialog
-    }
-
     // Function to delete a paper
-    async function deletePaper(id: string) {
+    async function deletePaper(dbId: string, arxivId?: string) {
 
         // Confirm if user wants to delete selected paper
         if (!confirm("Delete this paper?")) return;
 
-        const res = await fetch(`/api/papers/${id}`, {
+        const res = await fetch(`/api/papers/${dbId}`, {
             method: "DELETE",
         });
         if (!res.ok) {
@@ -96,37 +76,22 @@ export default function Home() {
         }
 
         // Remove the id of the previous paper (the one being deleted) from the UI and list
-        setPapers(prev => prev.filter(p => p.id != id));
-    }
-
-    // Summarize paper function
-    async function summarizePaper(paperText: string) {
-
-        setLoadingSummary(true);  // Set loading state
-
-        try {
-
-            const res = await fetch(`/api/summarize`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ text: paperText, max_length: 150 }),  // Adjust max_length as needed
+        setPapers(prev => prev.filter(p => p.id !== dbId));
+        if (arxivId) {
+            setBookmarkedIds(prev => {
+                const next = new Set(prev);
+                next.delete(arxivId);
+                return next;
             });
-
-            // Check for summarization error
-            if (!res.ok) {
-                throw new Error("Summarization failed");
-            }
-
-            // Get summary from response
-            const data = await res.json();
-            return data.summary as string;
-
-        } catch (error: any) {  // Catch any errors
-            console.error("Error during summarization:", error);
-            return null;
-        } finally {
-            setLoadingSummary(false);  // Reset loading state
         }
+
+        // Force search results to re-render with updated state
+        setSearchResults(prev =>
+            prev.map(p => ({
+                ...p,
+                isBookmarked: p.arxivId ? bookmarkedIds.has(p.arxivId) : false
+            }))
+        )
     }
 
     // Search arXiv function (using API)
@@ -155,7 +120,24 @@ export default function Home() {
             }
             const data = await res.json();
             const arr: any[] = Array.isArray(data) ? data : data.results ?? [];  // Update search results state (ensure array)
-            setSearchResults(arr);
+
+            // Update search result states right away
+            setSearchResults(
+                arr.map((r: any) => ({
+                    id: r.id,
+                    arxivId: r.id,
+                    url: r.url,
+                    title: r.title,
+                    abstract: r.abstract ?? null,
+                    contributors: r.contributors ?? null,
+                    datePublished: r.datePublished ?? null,
+                    problem: r.problem ?? null,
+                    method: r.method ?? null,
+                    results: r.results ?? null,
+                    limitations: r.limitations ?? null,
+                }))
+            );
+
         } catch (error: any) {  // Catch any errors
             setSearchError(error.message || "Search failed");
         } finally {
@@ -164,31 +146,51 @@ export default function Home() {
     }
 
     // Handle bookmarks by id of paper
-    const paperKey = (p: Paper) => (p.id || p.url || "");
-    const isBookmarked = (p: Paper) => bookmarkedIds.has(paperKey(p));
+    const paperKey = (p: Paper) => (p.arxivId || p.url || "");
+    const isBookmarked = (p: Paper) =>
+        p.arxivId ? bookmarkedIds.has(p.arxivId) : false;
 
     // Bookmark paper (save to the library)
     async function toggleBookmark(p: Paper) {
         const key = paperKey(p);
         if (!key) return;
 
-        // Delete duplicates from database
+        // Check for duplicates
         if (isBookmarked(p)) {
-            await fetch(`/api/papers/${p.id}`, { method: "DELETE" });
-            setBookmarkedIds(prev => {
-                const next = new Set(prev);
-                next.delete(key);
-                return next;
-            });
-            setPapers(curr => curr.filter(b => paperKey(b) != key));
+
+            // Already bookmarked → delete
+            const saved = papers.find(b => b.arxivId === p.arxivId);
+            if (saved) {
+                await deletePaper(saved.id, saved.arxivId);
+            }
+
         } else {
-            await fetch(`/api/papers`, {
+            // Only POST if not already saved
+            const res = await fetch(`/api/papers`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(p),
+                body: JSON.stringify({
+                    ...p,
+                    arxivId: p.arxivId || p.id  // Normalize
+                }),
             });
+
+            if (res.status == 409) {
+                // Show user-friendly message indicating duplicate
+                alert("This paper is already saved in your bookmarks.");
+                return;
+            }
+
+            // Catch errors
+            if (!res.ok) {
+                const j = await res.json().catch(() => ({}));
+                console.error("Save failed", j.error);
+                return;
+            }
+
+            // If all checks pass, bookmark new paper 
             setBookmarkedIds(prev => new Set(prev).add(key));
-            load();  // Reload the backend (instead of manual push)
+            load();
         }
     }
 
@@ -279,7 +281,6 @@ export default function Home() {
                                 paper={p}
                                 isBookmarked={isBookmarked(p)}
                                 onToggleBookmark={toggleBookmark}  // For bookmarked case
-                                onViewDetails={viewPaperDetails}  // For viewing paper details
                             />
 
                         ))}
@@ -308,8 +309,7 @@ export default function Home() {
                                 key={p.id || p.url || i}
                                 paper={p}
                                 isBookmarked={isBookmarked(p)}
-                                onDelete={deletePaper}  // For delete case
-                                onViewDetails={viewPaperDetails}  // For viewing paper details
+                                onDelete={() => deletePaper(p.id, p.arxivId)}  // For delete case
                             />
 
                         ))}
@@ -318,91 +318,8 @@ export default function Home() {
             </div>
 
             {/* Dialog for viewing paper details (outside of list of each paper) */}
-            <Dialog open={!!viewPaper} onOpenChange={(open) => { if (!open) closePaperDetails(); }}>
-                <DialogContent className="w-full max-w-5xl max-h-[80vh] overflow-y-auto">
-                    <DialogHeader>
-                        <DialogTitle className="text-lg font-bold text-gray-700">
-                            {viewPaper?.title}
-                        </DialogTitle>
-                        <p className="text-gray-500">{viewPaper?.datePublished}</p>
-                        <p className="text-gray-500">{viewPaper?.contributors}</p>
-                    </DialogHeader>
 
-                    {/* Paper details content */}
-                    <div className="space-y-4 text-gray-700">
 
-                        {viewPaper?.abstract && (
-                            <div>
-                                <h3 className="font-semibold">Abstract</h3>
-                                <p className="text-gray-700">{viewPaper.abstract}</p>
-                            </div>
-                        )}
-
-                        {viewPaper?.problem && (
-                            <div>
-                                <h3 className="font-semibold">Problem</h3>
-                                <p className="whitespace-pre-wrap">{viewPaper.problem}</p>
-                            </div>
-                        )}
-
-                        {viewPaper?.method && (
-                            <div>
-                                <h3 className="font-semibold">Method</h3>
-                                <p className="whitespace-pre-wrap">{viewPaper.method}</p>
-                            </div>
-                        )}
-
-                        {viewPaper?.result && (
-                            <div>
-                                <h3 className="font-semibold">Results</h3>
-                                <p className="whitespace-pre-wrap">{viewPaper.result}</p>
-                            </div>
-                        )}
-
-                        {viewPaper?.limitations && (
-                            <div>
-                                <h3 className="font-semibold">Limitations</h3>
-                                <p className="whitespace-pre-wrap">{viewPaper.limitations}</p>
-                            </div>
-                        )}
-
-                        {/* Button to summarize abstract using AI */}
-                        {loadingSummary && <div className="text-sm text-muted-foreground text-gray-700">Summarizing...</div>}
-
-                        <Button
-                            variant="outline"
-                            disabled={loadingSummary || !viewPaper?.abstract}
-                            className="text-md text-white font-semibold bg-blue-400 hover:bg-blue-300 transition-colors flex text-center h-10"
-                            onClick={async () => {
-                                if (!viewPaper?.abstract) return;  // Do nothing if no abstract
-                                const s = await summarizePaper(viewPaper.abstract);
-                                if (s) setSummary(s);  // Set summary state
-                            }}
-                        >
-                            {loadingSummary ? "Summarizing..." : "Summarize Abstract"}
-                        </Button>
-
-                        {summary && (
-                            <div>
-                                <h3 className="font-semibold">AI-Generated Summary</h3>
-                                <p className="whitespace-pre-wrap">{summary}</p>
-                            </div>
-                        )}
-
-                    </div>
-
-                    {/* Dialog footer with arXiv link */}
-                    <DialogFooter className="mt-4">
-                        {viewPaper?.id && (
-                            <a href={`http://arxiv.org/abs/${viewPaper.id}` || "#"} target="_blank" rel="noopener noreferrer">
-                                <ExternalLink className="mr-2 h-4 w-4 text-gray-400" />
-                                <span className="text-sm font-medium">Open</span>
-                            </a>
-                        )}
-                    </DialogFooter>
-
-                </DialogContent>
-            </Dialog>
         </main>
 
     );

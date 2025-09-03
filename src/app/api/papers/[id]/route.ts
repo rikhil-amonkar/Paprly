@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { error } from "console";
 
 // Update details of paper
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {

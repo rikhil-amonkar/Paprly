@@ -1,14 +1,19 @@
 // Empty paper schema
 export type Paper = {
     id: string;
+    arxivId?: string;
+    url?: string;
     title: string;
-    abstract?: string | null;
-    problem?: string | null;
-    method?: string | null;
-    result?: string | null;
-    limitations?: string | null;
-    contributors?: string | null;
-    url?: string | null;
-    createdAt: string;
-    datePublished?: string | null;
+    abstract?: string;
+    contributors?: string;
+    datePublished?: string;
+
+    // arXiv-only
+    authors?: string[];
+    published?: string;
+
+    problem?: string;
+    method?: string;
+    results?: string;
+    limitations?: string;
 };
